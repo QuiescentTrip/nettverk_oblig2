@@ -2,10 +2,15 @@ import _thread as thread
 from socket import *
 import sys
 
+'''
+if you want a commented version of this code that does not have
+to do with multithreading check out the python code in the "task1" folder
+'''
+
 def handle_client(connectionSocket):
-    """
-    Handles client requests. Each request runs in its own thread.
-    """
+    '''
+    handles client requests. each request runs in its own thread.
+    '''
     try:
         message = connectionSocket.recv(1024).decode()
         if not message:
@@ -48,10 +53,13 @@ def start_server(port):
         while True:
             print('Ready to serve...')
             connectionSocket, addr = serverSocket.accept()
+
+            #this is all we need to have it multithreaded.
+            #we assign each run of the funciton handle_client to a new thread
             thread.start_new_thread(handle_client, (connectionSocket,))
 
     except KeyboardInterrupt:
-        print("Server is shutting down...")
+        print("server is shutting down")
         serverSocket.close()
         sys.exit()
 

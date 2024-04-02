@@ -1,57 +1,60 @@
-#import socket module
 from socket import *
-import sys # In order to terminate the program
+import sys
 
-serverSocket = socket(AF_INET, SOCK_STREAM)
-
-# Prepare a server socket
-serverPort = 8080
-not_connected = True
-while not_connected:
+def handle_client(connectionSocket):
+    """
+    Handles client requests. Each request runs in its own thread.
+    """
     try:
-        serverSocket.bind(('', serverPort))
-        not_connected = False
-    except OSError:
-        serverPort += 1
-    except OverflowError:
-        print("There are no available ports")
-        sys.exit(1)
+        message = connectionSocket.recv(1024).decode()
+        if not message:
+            return
 
-serverSocket.listen(1)
+        filename = message.split()[1]
+        print(filename)
+        with open('.' + filename, 'r') as f:
+            outputdata = f.read()
+        header = 'HTTP/1.1 200 OK\n\n'
+        httpResponse = header + outputdata
+        connectionSocket.sendall(httpResponse.encode())
 
-print(f'Server is up at port {serverPort}')
-try:
-    while True:
-        # Establish the connection
-        print('Ready to serve...')
-        connectionSocket, addr = serverSocket.accept()
-        
+    except IOError:
+        # Prepare and send HTTP response for file not found
+        header = 'HTTP/1.1 404 Not Found\n\n'
+        errorResponse = header + "<html><head></head><body><h1>404 Not Found</h1></body></html>\n"
+        connectionSocket.sendall(errorResponse.encode())
+
+    finally:
+        # Ensure the connection is closed after handling the request
+        connectionSocket.close()
+
+def start_server(port):
+    serverSocket = socket(AF_INET, SOCK_STREAM)
+    not_connected = True
+    while not_connected:
         try:
-            message = connectionSocket.recv(1024).decode()
-            if not message:
-                continue
+            serverSocket.bind(('', port))
+            not_connected = False
+        except OSError:
+            print(f"Port {port} is busy, trying port {port + 1}")
+            port += 1
+        except OverflowError:
+            print("There are no available ports")
+            sys.exit(1)
 
-            filename = message.split()[1]
-            with open('.'+filename, 'r') as f:
-                outputdata = f.read()
-            # Prepare HTTP response header and content
-            header = 'HTTP/1.1 200 OK\n\n'
-            httpResponse = header + outputdata
+    serverSocket.listen(5)
+    print(f'Server is up at port {port}')
+    try:
+        while True:
+            print('Ready to serve...')
+            connectionSocket, addr = serverSocket.accept()
+            handle_client(connectionSocket)
 
-            # Send HTTP response in one go
-            connectionSocket.sendall(httpResponse.encode())
+    except KeyboardInterrupt:
+        print("Server is shutting down...")
+        serverSocket.close()
+        sys.exit()
 
-        except IOError:
-            # Prepare and send HTTP response for file not found
-            header = 'HTTP/1.1 404 Not Found\n\n'
-            errorResponse = header + "<html><head></head><body><h1>404 Not Found</h1></body></html>\n"
-            connectionSocket.sendall(errorResponse.encode())
+if __name__ == "__main__":\
+    start_server(8080)
 
-        finally:
-            # Ensure the connection is closed after handling the request
-            connectionSocket.close()
-
-except KeyboardInterrupt:
-    print("Server is shutting down...")
-    serverSocket.close()
-    sys.exit()

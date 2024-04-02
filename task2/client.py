@@ -2,16 +2,58 @@ import socket
 import sys
 import argparse
 
+'''
+Both check functions are from last oblig, 
+I still have the same lower limit as in last oblig for the same reason stated there.  
+'''
+
+def check_port(val):
+    '''
+    Checks val if val is valid port.
+    returns val converted to interger if port is valid.
+    '''
+    upper_limit, lower_limit = 65535, 1024
+    try:
+        value = int(val)
+    except ValueError:
+        raise argparse.ArgumentTypeError('Expected an integer but you entered a string')
+    
+    if not lower_limit <= value <= upper_limit:
+        raise argparse.ArgumentTypeError(f"Invalid port. It must be within the range [{lower_limit},{upper_limit}]")
+
+    return value
+
+def check_ip(val):
+    '''
+    Checks if IP is valid.
+    Returns IP if valid.
+    '''
+    #Early return to allow localhost as IP, for convenience
+    if val.lower() == "localhost":
+        return val
+     
+    split = val.split(".") 
+    if len(split) != 4:
+        raise argparse.ArgumentTypeError("The IP needs to be written in standard format")
+    for num in split:
+        try:
+            if not 0 <= int(num) <= 255:
+                raise argparse.ArgumentTypeError("The IP needs to be written in standard format")
+        except ValueError:
+             raise argparse.ArgumentTypeError("The IP address should only contain numbers.")
+
+    return val
+
+
 def create_http_request(host, path):
     """
-    Create a simple HTTP GET request for a given host and path.
+    HTTP GET request in string form
     """
-    return f"GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
+    return f"GET /{path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
 
 def http_client(host, port, path):
     """
-    Simple HTTP client that sends a GET request to a specified host and port,
-    and prints the server response.
+    Sends HTTP GET request to IP and PORT and tries to print file found with path to STDOUT
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect((host, port))
@@ -28,10 +70,10 @@ def http_client(host, port, path):
         print(response)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Simple HTTP client")
-    parser.add_argument("-i", "--ip", required=True, help="Server IP address or hostname")
-    parser.add_argument("-p", "--port", type=int, required=True, help="Server port")
-    parser.add_argument("-f", "--filename", required=True, help="Path of the requested object")
+    parser = argparse.ArgumentParser(description="HTTP client")
+    parser.add_argument("-i", "--ip", type=check_ip, required=True, help="Server IP address or hostname")
+    parser.add_argument("-p", "--port", type=check_port, required=True, help="Server port")
+    parser.add_argument("-f", "--filename", required=False, default="", help="Path of the requested object")
 
     args = parser.parse_args()
     
