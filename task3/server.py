@@ -7,7 +7,7 @@ if you want a commented version of this code that does not have
 to do with multithreading check out the python code in the "task1" folder
 '''
 
-def handle_client(connectionSocket):
+def handle_client(connectionSocket) -> None:
     '''
     handles client requests. each request runs in its own thread.
     '''
@@ -34,7 +34,7 @@ def handle_client(connectionSocket):
         # Ensure the connection is closed after handling the request
         connectionSocket.close()
 
-def start_server(port):
+def start_server(port) -> None:
     serverSocket = socket(AF_INET, SOCK_STREAM)
     not_connected = True
     while not_connected:
